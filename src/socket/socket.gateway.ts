@@ -95,6 +95,7 @@ export class SocketGateway
     const game = new Game(code, client.id);
     this.games.push(game);
     client.emit('game-created', game.Code);
+    console.log(`Game ${game.Code} created by `, client.id);
   }
 
   @SubscribeMessage('game-waiting-timeout')
@@ -113,7 +114,11 @@ export class SocketGateway
       return this.sendError(client.id, 'Ya este juego no existe', 'join-game');
     try {
       game.joinPlayer(client.id);
-      client.emit('join-game', game.Code);
+      client.emit('game-started', game.Code);
+      this.server.sockets.sockets
+        .get(game.SocketId)
+        ?.emit('game-started', game.Code);
+      console.log('Game Started');
     } catch {
       this.sendError(
         client,
