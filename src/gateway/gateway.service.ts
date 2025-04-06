@@ -12,9 +12,6 @@ import {
 import { Server, Socket } from 'socket.io';
 import { GameService } from 'src/game/game.service';
 
-type ConditionalReturn<T> =
-  T extends Array<string> ? Socket[] : Socket | undefined;
-
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -50,20 +47,16 @@ export class GatewayService
   afterInit() {
     Logger.verbose('Gateway websocket esta funcionando');
   }
-  private getSockets<T>(clients: T): ConditionalReturn<T> {
-    if (Array.isArray(clients)) {
-      const sockets: Socket[] = [];
-      for (const client of clients as T & string[]) {
-        const socket = this.server.sockets.sockets.get(client);
-        if (socket) sockets.push(socket);
-      }
-      return sockets as ConditionalReturn<T>;
-    } else if (typeof clients == 'string')
-      return this.server.sockets.sockets.get(clients) as ConditionalReturn<T>;
-    else
-      throw new Error(
-        "El parametro 'clients' debe ser un string o un arreglo de string",
-      );
+  private getSocket(clientId: string) {
+    return this.server.sockets.sockets.get(clientId);
+  }
+  private getSockets(clients: string[]) {
+    const sockets: Socket[] = [];
+    for (const client of clients) {
+      const socket = this.getSocket(client);
+      if (socket) sockets.push(socket);
+    }
+    return sockets;
   }
   private emitError(
     clients: string | Socket | (string | Socket)[],
@@ -74,7 +67,7 @@ export class GatewayService
     const emit = (client: string | Socket) => {
       let socket: Socket | undefined = undefined;
       if (typeof client == 'string') {
-        socket = this.getSockets(client);
+        socket = this.getSocket(client);
       }
       if (typeof client == 'object') {
         socket = client;
@@ -87,6 +80,7 @@ export class GatewayService
   private emitOnlineStatus() {
     this.server.emit('online-status', this.server.sockets.sockets.size);
   }
+
   @SubscribeMessage('create-game')
   createGame(@MessageBody() code: string, @ConnectedSocket() client: Socket) {
     try {
