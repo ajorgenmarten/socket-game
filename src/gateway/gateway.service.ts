@@ -105,7 +105,7 @@ export class GatewayService
         game.JoinedSocketId as string,
         game.OwnerSocketId,
       ]);
-      clients.forEach((client) => client.emit('game-started', game));
+      clients.forEach((client) => client.emit('joined-to-game', game));
     } catch (error) {
       Logger.error((error as Error).message);
       this.emitError(client, (error as Error).message, 'join-game');
