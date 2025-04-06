@@ -5,6 +5,13 @@ export class GameIsFull extends Error {
   }
 }
 
+export class NumberHasBeenStablished extends Error {
+  constructor() {
+    super(`El numero ya ha sido establecido`);
+    this.name = NumberHasBeenStablished.name;
+  }
+}
+
 export class GameAlreadyExist extends Error {
   constructor(code: string) {
     super(`Ya hay una partida con el codigo ${code}`);

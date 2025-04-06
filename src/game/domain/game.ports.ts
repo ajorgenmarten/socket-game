@@ -8,3 +8,8 @@ export abstract class GameRepository {
   abstract delete(code: string): boolean;
   abstract get Games(): Game[];
 }
+
+export interface SetNumberInput {
+  code: string;
+  number: string;
+}

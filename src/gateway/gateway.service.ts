@@ -10,6 +10,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { SetNumberInput } from 'src/game/domain/game.ports';
 import { GameService } from 'src/game/game.service';
 
 @WebSocketGateway({
@@ -80,6 +81,15 @@ export class GatewayService
   private emitOnlineStatus() {
     this.server.emit('online-status', this.server.sockets.sockets.size);
   }
+  @SubscribeMessage('end-game')
+  endGame(@MessageBody() code: string, @ConnectedSocket() client: Socket) {
+    try {
+      console.log('end-game');
+    } catch (error) {
+      Logger.error((error as Error).message);
+      this.emitError(client, (error as Error).message, 'end-game');
+    }
+  }
 
   @SubscribeMessage('create-game')
   createGame(@MessageBody() code: string, @ConnectedSocket() client: Socket) {
@@ -103,6 +113,37 @@ export class GatewayService
     } catch (error) {
       Logger.error((error as Error).message);
       this.emitError(client, (error as Error).message, 'join-game');
+    }
+  }
+  @SubscribeMessage('set-number')
+  setNumber(
+    @MessageBody() { number, code }: SetNumberInput,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const game = this.gameService.setSecretNumber(number, code, client.id);
+      const clientSocketId =
+        game.OwnerSocketId == client.id
+          ? game.OwnerSocketId
+          : game.JoinedSocketId;
+      const rivalSocketRival =
+        game.OwnerSocketId == client.id
+          ? game.JoinedSocketId
+          : game.OwnerSocketId;
+      const clientSocket = this.getSocket(clientSocketId as string);
+      const rivalSocket = this.getSocket(rivalSocketRival as string);
+
+      if (game.OwnerNumber != null && game.JoinedNumber != null) {
+        const turn = Math.random() * 100 > 50 ? [true, false] : [false, true];
+        clientSocket?.emit('game-started', turn[0]);
+        rivalSocket?.emit('game-started', turn[1]);
+      } else {
+        clientSocket?.emit('number-setted');
+        rivalSocket?.emit('rival-is-ready');
+      }
+    } catch (error) {
+      Logger.error((error as Error).message);
+      this.emitError(client, (error as Error).message, 'set-number');
     }
   }
 }
