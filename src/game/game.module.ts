@@ -6,14 +6,18 @@ import { InMemoryGameRepository } from './infrastructure/InMemoryGameRepository'
 import { GameService } from './game.service';
 import { DisconnectPlayer } from './application/DisconnectPlayer';
 import { GamesStats } from './application/GamesStats';
+import { WaitTimeout } from './application/WaitTimeout';
+import { SetNumber } from './application/SetNumber';
 
 @Module({
   providers: [
     CreateGame,
     JoinToGame,
-    GameService,
     DisconnectPlayer,
     GamesStats,
+    WaitTimeout,
+    SetNumber,
+    GameService,
     { provide: GameRepository, useClass: InMemoryGameRepository },
   ],
   exports: [GameService],

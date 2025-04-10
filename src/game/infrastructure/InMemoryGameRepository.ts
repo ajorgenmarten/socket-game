@@ -5,8 +5,7 @@ import { GameRepository } from '../domain/game.ports';
 @Injectable()
 export class InMemoryGameRepository implements GameRepository {
   private games: Game[] = [];
-  createGame(code: string, socketId: string): Game {
-    const game = new Game(code, socketId);
+  insertGame(game: Game): Game {
     this.games.push(game);
     return game;
   }
@@ -21,11 +20,8 @@ export class InMemoryGameRepository implements GameRepository {
     this.games[findIndex] = game;
     return true;
   }
-  hasPlayer(socketId: string): Game | undefined {
+  gameWithPlayer(socketId: string): Game | undefined {
     const gamefound = this.games.find((game) => {
-      if (!game.JoinedSocketId) {
-        return game.OwnerSocketId == socketId;
-      }
       return game.JoinedSocketId == socketId || game.OwnerSocketId == socketId;
     });
     return gamefound;

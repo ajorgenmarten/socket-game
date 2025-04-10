@@ -5,6 +5,19 @@ export class GameIsFull extends Error {
   }
 }
 
+export class GameIsNotReady extends Error {
+  constructor() {
+    super(`El juego no esta listo`);
+    this.name = GameIsNotReady.name;
+  }
+}
+
+export class IsNotYourTurn extends Error {
+  constructor() {
+    super(`No es tu turno`);
+  }
+}
+
 export class NumberHasBeenStablished extends Error {
   constructor() {
     super(`El numero ya ha sido establecido`);
