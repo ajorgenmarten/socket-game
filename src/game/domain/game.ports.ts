@@ -41,3 +41,15 @@ export interface SetNumberResponse {
   requestedSocketId: string;
   rivalSocketId: string | null;
 }
+
+export interface TestNumberResponse {
+  gameCode: string;
+  rivalSocketId: string;
+  requestedSocketId: string;
+  asserts: number;
+}
+
+export interface TestNumberInput {
+  code: string;
+  number: string;
+}

@@ -11,7 +11,7 @@ import {
 } from '@nestjs/websockets';
 import { Subject, takeUntil, timer } from 'rxjs';
 import { Server, Socket } from 'socket.io';
-import { SetNumberInput } from 'src/game/domain/game.ports';
+import { SetNumberInput, TestNumberInput } from 'src/game/domain/game.ports';
 import { GameService } from 'src/game/game.service';
 
 const SOCKET_EMIT_EVENTS = {
@@ -21,6 +21,9 @@ const SOCKET_EMIT_EVENTS = {
   GAME_READY: 'game-ready',
   NUMBER_SETTED: 'number-setted',
   JOINED_TO_GAME: 'joined-to-game',
+  GAME_OVER: 'game-over',
+  WINNER: 'winner',
+  HAS_PLAYED: 'has-played',
   ERROR: 'error',
 };
 
@@ -28,13 +31,10 @@ const SOCKET_LISTEN_EVENTS = {
   CREATE_GAME: 'create-game',
   JOIN_GAME: 'join-game',
   SET_NUMBER: 'set-number',
+  TEST_NUMBER: 'test-number',
 };
 
-@WebSocketGateway({
-  cors: {
-    origin: '*',
-  },
-})
+@WebSocketGateway({ cors: { origin: '*' } })
 export class GatewayService
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {
@@ -164,6 +164,41 @@ export class GatewayService
         client,
         (error as Error).message,
         SOCKET_LISTEN_EVENTS.SET_NUMBER,
+      );
+    }
+  }
+  @SubscribeMessage(SOCKET_LISTEN_EVENTS.TEST_NUMBER)
+  testNumber(
+    @MessageBody() data: TestNumberInput,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const testNumberResult = this.gameService.testSecretNumber(
+        data.code,
+        client.id,
+        data.number,
+      );
+      if (testNumberResult.asserts == 4) {
+        client.emit(SOCKET_EMIT_EVENTS.WINNER);
+        this.getSocket(testNumberResult.rivalSocketId)?.emit(
+          SOCKET_EMIT_EVENTS.GAME_OVER,
+        );
+        this.gameService.waitTimeout.execute(data.code);
+      } else {
+        client.emit(SOCKET_EMIT_EVENTS.HAS_PLAYED, {
+          asserts: testNumberResult.asserts,
+          youTurn: false,
+        });
+        this.getSocket(testNumberResult.rivalSocketId)?.emit(
+          SOCKET_EMIT_EVENTS.HAS_PLAYED,
+          { asserts: testNumberResult.asserts, youTurn: true },
+        );
+      }
+    } catch (error) {
+      this.emitError(
+        client,
+        (error as Error).message,
+        SOCKET_LISTEN_EVENTS.TEST_NUMBER,
       );
     }
   }

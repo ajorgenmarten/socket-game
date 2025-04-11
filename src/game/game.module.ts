@@ -8,6 +8,7 @@ import { DisconnectPlayer } from './application/DisconnectPlayer';
 import { GamesStats } from './application/GamesStats';
 import { WaitTimeout } from './application/WaitTimeout';
 import { SetNumber } from './application/SetNumber';
+import { TestNumber } from './application/TestNumber';
 
 @Module({
   providers: [
@@ -17,6 +18,7 @@ import { SetNumber } from './application/SetNumber';
     GamesStats,
     WaitTimeout,
     SetNumber,
+    TestNumber,
     GameService,
     { provide: GameRepository, useClass: InMemoryGameRepository },
   ],
