@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -9,6 +9,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { ErrorService } from 'src/shared/error.service';
 import { Subject, takeUntil, timer } from 'rxjs';
 import { Server, Socket } from 'socket.io';
 import { SetNumberInput, TestNumberInput } from 'src/game/domain/game.ports';
@@ -34,6 +35,7 @@ const SOCKET_LISTEN_EVENTS = {
   TEST_NUMBER: 'test-number',
 };
 
+@Injectable()
 @WebSocketGateway({ cors: { origin: '*' } })
 export class GatewayService
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
@@ -43,14 +45,17 @@ export class GatewayService
 
   private games: Map<string, { countdown$: Subject<void> }> = new Map();
 
-  constructor(private readonly gameService: GameService) {}
+  constructor(
+    private readonly gameService: GameService,
+    private readonly errorService: ErrorService,
+  ) {}
 
   handleConnection(client: Socket) {
-    Logger.verbose(`Cliente conectado (id: ${client.id})`);
+    this.errorService.logVerbose(`Cliente conectado (id: ${client.id})`);
     this.emitPlayersConnected();
   }
   handleDisconnect(client: Socket) {
-    Logger.verbose(`Cliente desconectado (id: ${client.id})`);
+    this.errorService.logVerbose(`Cliente desconectado (id: ${client.id})`);
     const disconnectionResponse = this.gameService.disconnectedPlayer(
       client.id,
     );
@@ -68,7 +73,7 @@ export class GatewayService
     this.emitPlayersConnected();
   }
   afterInit() {
-    Logger.verbose('Gateway websocket esta funcionando');
+    this.errorService.logVerbose('Gateway websocket esta funcionando');
   }
   private getSocket(clientId: string) {
     return this.server.sockets.sockets.get(clientId);
@@ -107,18 +112,19 @@ export class GatewayService
           this.games.delete(game.gameCode);
           const socket = this.getSocket(client.id);
           socket?.emit(SOCKET_EMIT_EVENTS.WAIT_TIMEOUT, game.gameCode);
-          Logger.verbose(
+          this.errorService.logVerbose(
             'Juego cerrado porque se ha agotado el tiempo de espera',
           );
         });
       this.games.set(game.gameCode, { countdown$ });
-      Logger.verbose('Juego creado...');
+      this.errorService.logVerbose('Juego creado...');
     } catch (error) {
-      this.emitError(
-        client,
-        (error as Error).message,
-        SOCKET_LISTEN_EVENTS.CREATE_GAME,
-      );
+      const errorDetails = this.errorService.handleError({
+        message:
+          error instanceof Error ? error.message : 'Error al crear el juego',
+        source: SOCKET_LISTEN_EVENTS.CREATE_GAME,
+      });
+      this.emitError(client, errorDetails.message, errorDetails.source);
     }
   }
   @SubscribeMessage(SOCKET_LISTEN_EVENTS.JOIN_GAME)
@@ -134,12 +140,12 @@ export class GatewayService
       joinedSocket?.emit(SOCKET_EMIT_EVENTS.JOINED_TO_GAME, game);
       ownerSocket?.emit(SOCKET_EMIT_EVENTS.JOINED_TO_GAME, game);
     } catch (error) {
-      Logger.error((error as Error).message);
-      this.emitError(
-        client,
-        (error as Error).message,
-        SOCKET_LISTEN_EVENTS.JOIN_GAME,
-      );
+      const errorDetails = this.errorService.handleError({
+        message:
+          error instanceof Error ? error.message : 'Error al unirse al juego',
+        source: SOCKET_LISTEN_EVENTS.JOIN_GAME,
+      });
+      this.emitError(client, errorDetails.message, errorDetails.source);
     }
   }
   @SubscribeMessage(SOCKET_LISTEN_EVENTS.SET_NUMBER)
@@ -159,12 +165,14 @@ export class GatewayService
       rivalSocket?.emit(SOCKET_EMIT_EVENTS.GAME_READY);
       client.emit(SOCKET_EMIT_EVENTS.GAME_READY);
     } catch (error) {
-      Logger.error((error as Error).message);
-      this.emitError(
-        client,
-        (error as Error).message,
-        SOCKET_LISTEN_EVENTS.SET_NUMBER,
-      );
+      const errorDetails = this.errorService.handleError({
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Error al establecer el número',
+        source: SOCKET_LISTEN_EVENTS.SET_NUMBER,
+      });
+      this.emitError(client, errorDetails.message, errorDetails.source);
     }
   }
   @SubscribeMessage(SOCKET_LISTEN_EVENTS.TEST_NUMBER)
