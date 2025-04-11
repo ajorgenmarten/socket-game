@@ -18,6 +18,7 @@ export class TestNumber {
     if (!game) throw new GameNotFound(code);
     if (game.Code != code) throw new GameNotFound(code);
     const testNumber = game.testNumber(socketId, number);
+    this.gameRepository.updateGame(game);
     return {
       gameCode: game.Code,
       requestedSocketId: socketId,

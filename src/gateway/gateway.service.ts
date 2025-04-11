@@ -16,6 +16,7 @@ import { SetNumberInput, TestNumberInput } from 'src/game/domain/game.ports';
 import { GameService } from 'src/game/game.service';
 
 const SOCKET_EMIT_EVENTS = {
+  GAME_CREATED: 'game-created',
   ONLINE_STATUS: 'online-status',
   WAIT_TIMEOUT: 'wait-timeout',
   RIVAL_DISCONNECTED: 'rival-disconnected',
@@ -103,7 +104,7 @@ export class GatewayService
   @SubscribeMessage(SOCKET_LISTEN_EVENTS.CREATE_GAME)
   createGame(@MessageBody() code: string, @ConnectedSocket() client: Socket) {
     try {
-      const game = this.gameService.create(code, client.id);
+      const game = this.gameService.create(code.toString(), client.id);
       const countdown$ = new Subject<void>();
       timer(60000)
         .pipe(takeUntil(countdown$))
@@ -117,6 +118,7 @@ export class GatewayService
           );
         });
       this.games.set(game.gameCode, { countdown$ });
+      client.emit(SOCKET_EMIT_EVENTS.GAME_CREATED, code);
       this.errorService.logVerbose('Juego creado...');
     } catch (error) {
       const errorDetails = this.errorService.handleError({
@@ -196,18 +198,26 @@ export class GatewayService
         client.emit(SOCKET_EMIT_EVENTS.HAS_PLAYED, {
           asserts: testNumberResult.asserts,
           youTurn: false,
+          number: data.number,
         });
         this.getSocket(testNumberResult.rivalSocketId)?.emit(
           SOCKET_EMIT_EVENTS.HAS_PLAYED,
-          { asserts: testNumberResult.asserts, youTurn: true },
+          {
+            asserts: testNumberResult.asserts,
+            youTurn: true,
+            number: data.number,
+          },
         );
       }
     } catch (error) {
-      this.emitError(
-        client,
-        (error as Error).message,
-        SOCKET_LISTEN_EVENTS.TEST_NUMBER,
-      );
+      const errorDetails = this.errorService.handleError({
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Error al establecer el número',
+        source: SOCKET_LISTEN_EVENTS.TEST_NUMBER,
+      });
+      this.emitError(client, errorDetails.message, errorDetails.source);
     }
   }
 }

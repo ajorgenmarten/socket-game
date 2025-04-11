@@ -13,7 +13,7 @@ export class Game {
   private turnFor: string;
 
   constructor(
-    private code: string,
+    private readonly code: string,
     private ownerSocketId: string,
   ) {
     this.turnFor = ownerSocketId;
@@ -30,7 +30,7 @@ export class Game {
       throw new Error(`El numero no puede comenzar con 0`);
     if (new Set(number).size != number.length)
       throw new Error(`El numero no puede repetir dígitos`);
-    if (/^[0-9]*$/.test(number))
+    if (!/^[0-9]*$/.test(number))
       throw new Error(`El número solo puede contener dígitos`);
   }
 

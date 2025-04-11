@@ -26,15 +26,17 @@ export class SetNumber {
     // no encontrado. (Ya en esta parte se valida que el
     // cliente esta en la partida correcta)
     const game = this.gameRepository.gameWithPlayer(socketId);
-    if (!game?.JoinedSocketId) throw new GameIsNotReady();
     if (!game) throw new GameNotFound(code);
-    if (game.Code == code) throw new GameNotFound(code);
+    if (!game?.JoinedSocketId) throw new GameIsNotReady();
+    if (game.Code !== code) throw new GameNotFound(code);
 
     if (game.JoinedSocketId == socketId) {
       game.setJoinedNumber(number);
     } else {
       game.setOwnerNumber(number);
     }
+
+    this.gameRepository.updateGame(game);
 
     // Aqui se recoge el id de los socket, si ya los dos
     // jugadores han establecido su número secreto se resuleve
