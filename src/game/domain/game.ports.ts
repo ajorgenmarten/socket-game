@@ -49,6 +49,11 @@ export interface TestNumberResponse {
   asserts: number;
 }
 
+export interface FinishGameResponse {
+  rivalSocketId: string | null;
+  requestSocketId: string;
+}
+
 export interface TestNumberInput {
   code: string;
   number: string;

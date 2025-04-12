@@ -26,6 +26,8 @@ const SOCKET_EMIT_EVENTS = {
   GAME_OVER: 'game-over',
   WINNER: 'winner',
   HAS_PLAYED: 'has-played',
+  GAME_FINISHED: 'game-finished',
+  RIVAL_HAS_FINISHED_GAME: 'rival-has-finished-game',
   ERROR: 'error',
 };
 
@@ -34,6 +36,7 @@ const SOCKET_LISTEN_EVENTS = {
   JOIN_GAME: 'join-game',
   SET_NUMBER: 'set-number',
   TEST_NUMBER: 'test-number',
+  FINISH_GAME: 'finish-game',
 };
 
 @Injectable()
@@ -76,7 +79,8 @@ export class GatewayService
   afterInit() {
     this.errorService.logVerbose('Gateway websocket esta funcionando');
   }
-  private getSocket(clientId: string) {
+  private getSocket(clientId: string | null) {
+    if (clientId === null) return undefined;
     return this.server.sockets.sockets.get(clientId);
   }
   private emitError(
@@ -216,6 +220,25 @@ export class GatewayService
             ? error.message
             : 'Error al establecer el número',
         source: SOCKET_LISTEN_EVENTS.TEST_NUMBER,
+      });
+      this.emitError(client, errorDetails.message, errorDetails.source);
+    }
+  }
+  @SubscribeMessage(SOCKET_LISTEN_EVENTS.FINISH_GAME)
+  finishGame(@MessageBody() code: string, @ConnectedSocket() client: Socket) {
+    try {
+      const finishGameResult = this.gameService.endMatch(code, client.id);
+      client.emit(SOCKET_EMIT_EVENTS.GAME_FINISHED);
+      this.getSocket(finishGameResult.rivalSocketId)?.emit(
+        SOCKET_EMIT_EVENTS.RIVAL_HAS_FINISHED_GAME,
+      );
+    } catch (error) {
+      const errorDetails = this.errorService.handleError({
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Error al establecer el número',
+        source: SOCKET_LISTEN_EVENTS.FINISH_GAME,
       });
       this.emitError(client, errorDetails.message, errorDetails.source);
     }

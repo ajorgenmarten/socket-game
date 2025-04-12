@@ -6,6 +6,7 @@ import { GamesStats } from './application/GamesStats';
 import { WaitTimeout } from './application/WaitTimeout';
 import { SetNumber } from './application/SetNumber';
 import { TestNumber } from './application/TestNumber';
+import { FinishGame } from './application/FinishGame';
 
 @Injectable()
 export class GameService {
@@ -17,6 +18,7 @@ export class GameService {
     public readonly waitTimeout: WaitTimeout,
     public readonly setNumber: SetNumber,
     public readonly testNumber: TestNumber,
+    public readonly finishGame: FinishGame,
   ) {}
   create(code: string, socketId: string) {
     return this.createGame.execute(code, socketId);
@@ -35,5 +37,8 @@ export class GameService {
   }
   testSecretNumber(code: string, socketId: string, number: string) {
     return this.testNumber.execute(code, socketId, number);
+  }
+  endMatch(code: string, socketId: string) {
+    return this.finishGame.execute(code, socketId);
   }
 }

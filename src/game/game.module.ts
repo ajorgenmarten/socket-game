@@ -9,6 +9,7 @@ import { GamesStats } from './application/GamesStats';
 import { WaitTimeout } from './application/WaitTimeout';
 import { SetNumber } from './application/SetNumber';
 import { TestNumber } from './application/TestNumber';
+import { FinishGame } from './application/FinishGame';
 
 @Module({
   providers: [
@@ -19,6 +20,7 @@ import { TestNumber } from './application/TestNumber';
     WaitTimeout,
     SetNumber,
     TestNumber,
+    FinishGame,
     GameService,
     { provide: GameRepository, useClass: InMemoryGameRepository },
   ],
