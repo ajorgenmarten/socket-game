@@ -57,8 +57,8 @@ export class Game {
       throw new GameIsNotReady();
     const isOwner = this.ownerSocketId == playerSocketId;
     const [asserts, rivalSocketId] = isOwner
-      ? [this.ownerTry(number), this.joinedSocketId]
-      : [this.joinedTry(number), this.ownerSocketId];
+      ? [this.joinedTry(number), this.joinedSocketId]
+      : [this.ownerTry(number), this.ownerSocketId];
     this.turnFor = isOwner ? this.joinedSocketId : this.ownerSocketId;
     return {
       asserts,
